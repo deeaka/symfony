@@ -145,4 +145,16 @@ class CustomerDao extends Controller {
     }
    
   }
+  
+  
+    public function getSumTransaction($date) {
+        $queryBuilder = $em->createQueryBuilder()
+                ->select(array("sum(svdm.amount)"))
+                ->from("AppBundle\Entity\Transaction", "svdm")
+                ->where("svdm.date = :date")->setParameter('date', $date);
+        $result = $queryBuilder->getQuery()->getResult();
+        return $result;
+    }
+    
+    
 }

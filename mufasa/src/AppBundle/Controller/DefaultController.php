@@ -28,7 +28,7 @@ class DefaultController extends Controller {
      */
     public function indexAction(Request $request) {
         $responseArray = array('response' => '', 'error' => '');
-        $this->logger->info('deepak Soni');
+        $this->logger->info('DefaultController:addCustomer');
         try {
             $data = $request->getContent();
             $postArray = json_decode($data, true);
@@ -39,7 +39,7 @@ class DefaultController extends Controller {
             $responseArray['response'] = $customerList;
         } catch (\Exception $e) {
             $responseArray['error'] = $e->getMessage();
-            $this->logger->error('indexAction:error occured' . $e->getMessage());
+            $this->logger->error('DefaultController:indexAction:error occured' . $e->getMessage());
         }
         return new \Symfony\Component\HttpFoundation\JsonResponse($responseArray);
     }
@@ -61,7 +61,7 @@ class DefaultController extends Controller {
             $responseArray['response'] = $customerList;
         } catch (\Exception $e) {
             $responseArray['error'] = $e->getMessage();
-            $this->logger->error('indexAction:error occured' . $e->getMessage());
+            $this->logger->error('DefaultController:indexAction:error occured' . $e->getMessage());
         }
         return new \Symfony\Component\HttpFoundation\JsonResponse($responseArray);
     }
@@ -84,7 +84,7 @@ class DefaultController extends Controller {
             $responseArray['response'] = $customerList;
         } catch (\Exception $e) {
             $responseArray['error'] = $e->getMessage();
-            $this->logger->error('indexAction:error occured' . $e->getMessage());
+            $this->logger->error('DefaultController:indexAction:error occured' . $e->getMessage());
         }
         return new \Symfony\Component\HttpFoundation\JsonResponse($responseArray);
     }
@@ -107,7 +107,7 @@ class DefaultController extends Controller {
             $responseArray['response'] = $customerList;
         } catch (\Exception $e) {
             $responseArray['error'] = $e->getMessage();
-            $this->logger->error('indexAction:error occured' . $e->getMessage());
+            $this->logger->error('DefaultController:indexAction:error occured' . $e->getMessage());
         }
         return new \Symfony\Component\HttpFoundation\JsonResponse($responseArray);
     }
@@ -132,7 +132,7 @@ class DefaultController extends Controller {
             $responseArray['response'] = $customerList;
         } catch (\Exception $e) {
             $responseArray['error'] = $e->getMessage();
-            $this->logger->error('Controller:getTransactionByFilter error occured' . $e->getMessage());
+            $this->logger->error('DefaultController:getTransactionByFilter error occured' . $e->getMessage());
         }
         return new \Symfony\Component\HttpFoundation\JsonResponse($responseArray);
     }
@@ -156,6 +156,15 @@ class DefaultController extends Controller {
             $this->logger->error('Controller:getTransactionByFilter error occured' . $e->getMessage());
         }
         return new \Symfony\Component\HttpFoundation\JsonResponse($responseArray);
+    }
+    
+    public function cronTransaction($date) {
+            $em = $this->getDoctrine()->getManager();
+            $customerDao=new \AppBundle\DAO\CustomerDao();           
+            $dataList = $customerDao->getSumTransaction($em, $date);
+            print_r($dataList);exit;
+            $responseArray['response'] = $customerList;
+       
     }
     
     /**
