@@ -8,34 +8,34 @@ use Symfony\Bundle\FrameworkBundle\Controller\Controller;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Psr\Log\LoggerInterface;
-
+use Doctrine\ORM\EntityManager;
 /**
  * Class DefaultController
  * @author Deepak soni <deepakdreams.soni@gmail.com>
  * @copyright (c) 2017.
  */
-class DefaultController extends Controller {
+class DefaultController extends BaseController {
 
     private $logger;
 
-    public function __construct(LoggerInterface $logger) {
+    public function __construct(LoggerInterface $logger,EntityManager $em) {      
         $this->logger = $logger;
+        parent::__construct($em);
     }
-
+    
     /**
      * @Route("/addCustomer", name="addCustomer")
      * @Method({"POST"})
      */
-    public function indexAction(Request $request) {
+    public function indexCustomer(Request $request) {
         $responseArray = array('response' => '', 'error' => '');
         $this->logger->info('DefaultController:addCustomer');
         try {
             $data = $request->getContent();
             $postArray = json_decode($data, true);
 
-            $em = $this->getDoctrine()->getManager();
             $customerComponent = new \AppBundle\Component\CustomerComponent($this->logger);
-            $customerList = $customerComponent->addCustomer($em, $postArray);
+            $customerList = $customerComponent->addCustomer($postArray);
             $responseArray['response'] = $customerList;
         } catch (\Exception $e) {
             $responseArray['error'] = $e->getMessage();
@@ -54,10 +54,8 @@ class DefaultController extends Controller {
         try {
             $data = $request->getContent();
             $postArray = json_decode($data, true);
-            
-            $em = $this->getDoctrine()->getManager();
             $customerComponent = new \AppBundle\Component\CustomerComponent($this->logger);
-            $customerList = $customerComponent->addTransaction($em, $postArray);
+            $customerList = $customerComponent->addTransaction($postArray);
             $responseArray['response'] = $customerList;
         } catch (\Exception $e) {
             $responseArray['error'] = $e->getMessage();
@@ -78,9 +76,9 @@ class DefaultController extends Controller {
             $data = $request->getContent();
             $postArray = json_decode($data, true);
             
-            $em = $this->getDoctrine()->getManager();
+            
             $customerComponent = new \AppBundle\Component\CustomerComponent($this->logger);
-            $customerList = $customerComponent->updateTransaction($em, $postArray);
+            $customerList = $customerComponent->updateTransaction($postArray);
             $responseArray['response'] = $customerList;
         } catch (\Exception $e) {
             $responseArray['error'] = $e->getMessage();
@@ -98,12 +96,11 @@ class DefaultController extends Controller {
         $responseArray = array('response' => '', 'error' => '');
         $this->logger->info('deepak Soni');
         try {
+           // echo "Sdsda";exit;
             $customerId = $request->query->get('customerId');
-            $transactionId = $request->query->get('transactionId');
-
-            $em = $this->getDoctrine()->getManager();
+            $transactionId = $request->query->get('transactionId');       
             $customerComponent = new \AppBundle\Component\CustomerComponent($this->logger);
-            $customerList = $customerComponent->getTransaction($em, $customerId, $transactionId);
+            $customerList = $customerComponent->getTransaction($customerId, $transactionId);
             $responseArray['response'] = $customerList;
         } catch (\Exception $e) {
             $responseArray['error'] = $e->getMessage();
@@ -126,9 +123,8 @@ class DefaultController extends Controller {
             $offset = $request->query->get('offset');
             $limit = $request->query->get('limit');
 
-            $em = $this->getDoctrine()->getManager();
             $customerComponent = new \AppBundle\Component\CustomerComponent($this->logger);
-            $customerList = $customerComponent->getTransactionByFilter($em, $customerId, $amount, $date, $offset, $limit);
+            $customerList = $customerComponent->getTransactionByFilter($customerId, $amount, $date, $offset, $limit);
             $responseArray['response'] = $customerList;
         } catch (\Exception $e) {
             $responseArray['error'] = $e->getMessage();
@@ -149,7 +145,7 @@ class DefaultController extends Controller {
             $transactionId = $request->query->get('transactionId');    
             $em = $this->getDoctrine()->getManager();
             $customerComponent = new \AppBundle\Component\CustomerComponent($this->logger);
-            $customerList = $customerComponent->deleteTransaction($em, $transactionId);
+            $customerList = $customerComponent->deleteTransaction($transactionId);
             $responseArray['response'] = $customerList;
         } catch (\Exception $e) {
             $responseArray['error'] = $e->getMessage();

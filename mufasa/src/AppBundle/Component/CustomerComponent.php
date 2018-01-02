@@ -23,12 +23,12 @@ class CustomerComponent
       
     }
    
-    public function addCustomer($em,$postArray) {        
+    public function addCustomer($postArray) {        
         $this->logger->info('getCustomerList:inside');
         $this->validator->customerValidation($postArray);
         try {
             $customerDao = new CustomerDao;
-            $responseData = $customerDao->createCustomer($em, $postArray);
+            $responseData = $customerDao->createCustomer($postArray);
             $normalizers = new \Symfony\Component\Serializer\Normalizer\GetSetMethodNormalizer();
             $responseDataArr = $normalizers->normalize($responseData);            
         } catch (\MySQLException $e) {
@@ -38,14 +38,14 @@ class CustomerComponent
         return $responseDataArr;
     }
     
-    public function addTransaction($em,$postArray) { 
+    public function addTransaction($postArray) { 
         $responseData=array();
         $this->logger->info('addTransaction:inside');
         $this->validator->transValidation($postArray);
         try {            
             $customerDao = new CustomerDao;      
                       
-            $responseApi = $customerDao->addTransaction($em, $postArray);
+            $responseApi = $customerDao->addTransaction( $postArray);
             $responseData['transactionId']=$responseApi->getTransId();
             $responseData['amount']=$responseApi->getAmount();
             $responseData['date']=$responseApi->getCreated();                  
@@ -56,21 +56,21 @@ class CustomerComponent
         return $responseData;
     }
     
-     public function updateTransaction($em,$postArray) { 
+     public function updateTransaction($postArray) { 
         $responseData=array();
         $this->logger->info('addTransaction:inside');
         $this->validator->updateTransValidation($postArray);
         try {
             $customerDao = new CustomerDao;
             if (($postArray['transactionId'])) {
-                $transactionDetails = $customerDao->getTransaction($em, null,$postArray['transactionId']);               
+                $transactionDetails = $customerDao->getTransaction( null,$postArray['transactionId']);               
                 if (!isset($transactionDetails) || empty($transactionDetails)) {
                     throw(new \InvalidArgumentException("No Such Transaction Id  Exists :" . $postArray['transactionId'], 409));
                 }
             }           
             $transactionModel=$transactionDetails[0];            
             $transactionModel->setAmount($postArray['amount']);
-            $responseApi = $customerDao->updateTransaction($em, $transactionModel);
+            $responseApi = $customerDao->updateTransaction( $transactionModel);
             $responseData['transactionId'] = $responseApi->getTransId();
             $responseData['customerId'] = $responseApi->getCustId()->getId();
             $responseData['amount'] = $responseApi->getAmount();
@@ -83,21 +83,21 @@ class CustomerComponent
     }
     
     
-    public function getTransaction($em,$customerId,$transactionId) {        
+    public function getTransaction($customerId,$transactionId) {   
         $this->logger->info('getCustomerList:inside');
         $this->validator->customerParamValidation($customerId,$transactionId);
         $responseDataArr=array();
-        try {
+        try {       
             $customerDao = new CustomerDao();
             //check customer id exist or not            
             if(!empty($customerId)) {
-            $customerDetails = $customerDao->getCustomer($em,$customerId);
+            $customerDetails = $customerDao->getCustomer($customerId);            
             $customerId=  isset($customerDetails[0])?$customerDetails[0]->getId():null;            
             if (!isset($customerId) || empty($customerId)) {
               throw(new \InvalidArgumentException("No Such customer Exists With This customer id :".$customerId, 409));
             }
             }
-            $responseApiData = $customerDao->getTransaction($em,$customerId, $transactionId); 
+            $responseApiData = $customerDao->getTransaction($customerId, $transactionId); 
              if(empty($responseApiData)) {
                throw(new \InvalidArgumentException("No Transaction Exists", 409));  
             }            
@@ -108,35 +108,35 @@ class CustomerComponent
             $responseDataArr[]=$responseData;
             }            
            
-        } catch (\MySQLException $e) {                
+        } catch (\MySQLException $e) {       
               $this->logger->error('indexAction:error occured' . $e->getMessage());
               throw new \InvalidArgumentException($e->getMessage(), 500);
         }       
         return $responseDataArr;
     }
     
-    public function getTransactionByFilter($em,$customerId,$amount,$date,$offset,$limit) {        
+    public function getTransactionByFilter($customerId,$amount,$date,$offset,$limit) {        
         $this->logger->info('getCustomerList:inside');
         $this->validator->validatePageNumAndPageSize($offset,$limit);
         try {
             $customerDao = new CustomerDao();
             //check customer id exist or not
             if(!empty($customerId)) {
-            $customerDetails = $customerDao->getCustomer($em,$customerId);
+            $customerDetails = $customerDao->getCustomer($customerId);
             $customerId=  isset($customerDetails[0])?$customerDetails[0]->getId():null;            
             if (!isset($customerId) || empty($customerId)) {
               throw(new \InvalidArgumentException("No Such customer Exists With This customer id :".$dataArr['customerId'], 409));
             }
             }
             
-            $responseData = $customerDao->getTransactionByFilterCount($em,$customerId,$amount,$date); 
+            $responseData = $customerDao->getTransactionByFilterCount($customerId,$amount,$date); 
             $cnt = count($responseData);
             $totalPages = ceil($cnt / $limit);
             if ($offset > $totalPages) {
                 throw new \InvalidArgumentException('Records are not present for this Page Number.', 409);
             }
 
-            $responseData = $customerDao->getTransactionByFilter($em,$customerId,$amount,$date,$offset,$limit); 
+            $responseData = $customerDao->getTransactionByFilter($customerId,$amount,$date,$offset,$limit); 
             if(empty($responseData)) {
                throw(new \InvalidArgumentException("No Transaction Exists", 409));  
             }
@@ -148,12 +148,12 @@ class CustomerComponent
     }
     
     
-    public function deleteTransaction($em,$transactionId) {        
+    public function deleteTransaction($transactionId) {        
         $this->logger->info('getCustomerList:inside');
         $this->validator->validateDeleteTransaction($transactionId);
         try {
             $customerDao = new CustomerDao();                    
-            $responseData = $customerDao->deleteTransaction($em,$transactionId); 
+            $responseData = $customerDao->deleteTransaction($transactionId); 
             if($responseData) {
                 $responseData='success';
             } else {

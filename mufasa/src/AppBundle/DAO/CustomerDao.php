@@ -5,6 +5,8 @@ namespace AppBundle\DAO;
 use Symfony\Bundle\FrameworkBundle\Controller\Controller;
 use AppBundle\Entity\Customer as Customer;
 use AppBundle\Entity\Transaction as Transaction;
+use Doctrine\ORM\EntityManager;
+use Doctrine\ORM\Query;
 
 /**
  * Class DefaultController
@@ -12,12 +14,16 @@ use AppBundle\Entity\Transaction as Transaction;
  * @copyright (c) 2017.
  */
 class CustomerDao extends Controller {
+    private $em;
+    public function __construct() {  
+       $this->em = \AppBundle\Registry\Registry::getInstance();
+    }
 
     public function generateCode($digit = 8) {
         return str_replace('.', 0, substr(rand() . microtime(), 0, $digit));
     }
 
-    public function createCustomer($em, $dataArr = array()) {
+    public function createCustomer($dataArr = array()) {
         $dateTime = date("Y-m-d H:i:s");
         $customerModel = new Customer;
         $customerModel->setName($dataArr['name']);
@@ -25,15 +31,15 @@ class CustomerDao extends Controller {
         $customerModel->setActionBy($dataArr['actionedBy']);
         $customerModel->setCreated($dateTime);
         $customerModel->setUpdated($dateTime);
-        $em->persist($customerModel);
-        $em->flush();
+        $this->em->persist($customerModel);
+        $this->em->flush();
         return $customerModel;
     }
 
-    public function addTransaction($em, $dataArr = array()) {
+    public function addTransaction($dataArr = array()) {
         $dateTime = date("Y-m-d H:i:s");
         if(($dataArr['customerId'])) {            
-            $customerDetails = $this->getCustomer($em,$dataArr['customerId']);           
+            $customerDetails = $this->getCustomer($dataArr['customerId']);           
             $customerId=  isset($customerDetails[0])?$customerDetails[0]->getId():null;            
             if (!isset($customerId) || empty($customerId)) {
               throw(new \InvalidArgumentException("No Such customer Exists With This customer id :".$dataArr['customerId'], 409));
@@ -45,21 +51,21 @@ class CustomerDao extends Controller {
         $transactionModel->setAmount($dataArr['amount']);
         $transactionModel->setCreated($dateTime);
         
-        $em->persist($transactionModel);
-        $em->flush();
+        $this->em->persist($transactionModel);
+        $this->em->flush();
         return $transactionModel;
     }
 
-    public function updateTransaction($em, $transactionModel) {
+    public function updateTransaction($transactionModel) {
         $dateTime = date("Y-m-d H:i:s");       
         $transactionModel->setCreated($dateTime);        
-        $em->persist($transactionModel);
-        $em->flush();
+        $this->em->persist($transactionModel);
+        $this->em->flush();
         return $transactionModel;
     }
     
-    public function getCustomer($em, $customerId) {
-        return $queryBuilder = $em->createQueryBuilder()
+    public function getCustomer($customerId) {        
+        return $queryBuilder = $this->em->createQueryBuilder()
                         ->select('svdm')
                         ->from("\AppBundle\Entity\Customer", "svdm")
                         ->where("svdm.id = :customerId")
@@ -69,8 +75,8 @@ class CustomerDao extends Controller {
         //return $returnResult = $em->getRepository('\AppBundle\Entity\Customer')->findOneBy(array('id'=>$customerId));
     }
 
-    public function getTransaction($em, $customerId=null, $transactionId=null) {
-        return $queryBuilder = $em->createQueryBuilder()
+    public function getTransaction($customerId=null, $transactionId=null) {
+        return $queryBuilder = $this->em->createQueryBuilder()
                         ->select("svdm")
                         ->from("AppBundle\Entity\Transaction", "svdm")
                         ->join("svdm.custId", "fvm")
@@ -81,8 +87,8 @@ class CustomerDao extends Controller {
                         ->getQuery()->getResult();
     }
 
-    public function getTransactionByFilter($em, $customerId, $amount, $date, $offset, $limit) {
-        $queryBuilder = $em->createQueryBuilder()
+    public function getTransactionByFilter($customerId, $amount, $date, $offset, $limit) {
+        $queryBuilder = $this->em->createQueryBuilder()
                 ->select(array("svdm.transId", "svdm.amount", "svdm.created"))
                 ->from("AppBundle\Entity\Transaction", "svdm")
                 ->join("svdm.custId", "fvm");
@@ -108,8 +114,8 @@ class CustomerDao extends Controller {
         return $result;
     }
 
-    public function getTransactionByFilterCount($em, $customerId, $amount, $date) {
-        $queryBuilder = $em->createQueryBuilder()
+    public function getTransactionByFilterCount($customerId, $amount, $date) {
+        $queryBuilder = $this->em->createQueryBuilder()
                 ->select(array("svdm.transId", "svdm.amount", "svdm.created"))
                 ->from("AppBundle\Entity\Transaction", "svdm")
                 ->join("svdm.custId", "fvm");
@@ -132,11 +138,11 @@ class CustomerDao extends Controller {
     
     
 
-    public function deleteTransaction($em,$transactionId) {         
-    $result = $this->getTransaction($em,null,$transactionId);    
+    public function deleteTransaction($transactionId) {         
+    $result = $this->getTransaction(null,$transactionId);    
     if(!empty($result)) {      
       foreach ($result as $result) { 
-      $qa = $em->remove($result);
+      $qa = $this->em->remove($result);
       $em->flush(); 
       }
       return true;
@@ -148,13 +154,19 @@ class CustomerDao extends Controller {
   
   
     public function getSumTransaction($date) {
-        $queryBuilder = $em->createQueryBuilder()
-                ->select(array("sum(svdm.amount)"))
-                ->from("AppBundle\Entity\Transaction", "svdm")
-                ->where("svdm.date = :date")->setParameter('date', $date);
-        $result = $queryBuilder->getQuery()->getResult();
+        $queryBuilder = $this->em->createQueryBuilder()
+                ->select("sum(tr.amount)")
+                ->from("AppBundle\Entity\Transaction", "tr")
+                ->where("tr.created <= :date")->setParameter('date', $date);
+        $result = $queryBuilder->getQuery()->getSingleScalarResult();
         return $result;
     }
     
-    
+     public function addSummary($summaryModel) {
+        $dateTime = date("Y-m-d H:i:s");
+        $summaryModel->setCreated($dateTime);
+        $this->em->persist($summaryModel);
+        $this->em->flush();
+        return $summaryModel;
+    }
 }
